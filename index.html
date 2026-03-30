@@ -1,0 +1,410 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>音声分割ツール</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Helvetica Neue', sans-serif;
+      background: #f2f2f7;
+      color: #1c1c1e;
+      min-height: 100vh;
+      padding: 24px 16px 48px;
+    }
+
+    h1 {
+      font-size: 26px;
+      font-weight: 700;
+      margin-bottom: 4px;
+    }
+
+    .subtitle {
+      color: #8e8e93;
+      font-size: 14px;
+      margin-bottom: 28px;
+      line-height: 1.5;
+    }
+
+    .card {
+      background: #ffffff;
+      border-radius: 16px;
+      padding: 20px;
+      margin-bottom: 14px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+    }
+
+    .card-label {
+      font-size: 13px;
+      font-weight: 600;
+      color: #8e8e93;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 12px;
+    }
+
+    .dropzone {
+      border: 2px dashed #c7c7cc;
+      border-radius: 12px;
+      padding: 36px 16px;
+      text-align: center;
+      cursor: pointer;
+      transition: border-color 0.2s, background 0.2s;
+    }
+    .dropzone:active { background: #f2f2f7; }
+    .dropzone.has-file { border-color: #34c759; border-style: solid; }
+
+    #fileInput { display: none; }
+
+    .dropzone-icon { font-size: 44px; margin-bottom: 10px; }
+
+    .dropzone-text {
+      font-size: 16px;
+      font-weight: 500;
+      color: #007aff;
+    }
+
+    .dropzone-sub {
+      font-size: 13px;
+      color: #8e8e93;
+      margin-top: 4px;
+    }
+
+    #fileName {
+      font-size: 14px;
+      font-weight: 600;
+      color: #1c1c1e;
+      margin-top: 10px;
+      word-break: break-all;
+    }
+
+    select {
+      width: 100%;
+      padding: 13px 16px;
+      border: 1px solid #e5e5ea;
+      border-radius: 10px;
+      font-size: 17px;
+      background: white;
+      -webkit-appearance: none;
+      appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%238e8e93' stroke-width='2' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 14px center;
+    }
+
+    .split-btn {
+      width: 100%;
+      padding: 17px;
+      background: #007aff;
+      color: white;
+      border: none;
+      border-radius: 14px;
+      font-size: 18px;
+      font-weight: 600;
+      cursor: pointer;
+      margin-top: 4px;
+      transition: opacity 0.2s;
+    }
+    .split-btn:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+    .split-btn:not(:disabled):active { opacity: 0.8; }
+
+    .progress-section { display: none; }
+
+    .progress-bar {
+      height: 8px;
+      background: #e5e5ea;
+      border-radius: 100px;
+      overflow: hidden;
+      margin: 10px 0;
+    }
+    .progress-fill {
+      height: 100%;
+      background: linear-gradient(90deg, #007aff, #34c759);
+      border-radius: 100px;
+      width: 0%;
+      transition: width 0.4s ease;
+    }
+
+    .status-text {
+      font-size: 14px;
+      color: #8e8e93;
+      line-height: 1.5;
+    }
+
+    .downloads-section { display: none; }
+
+    .success-icon {
+      font-size: 36px;
+      text-align: center;
+      margin-bottom: 8px;
+    }
+
+    .success-msg {
+      font-size: 15px;
+      color: #8e8e93;
+      text-align: center;
+      margin-bottom: 16px;
+      line-height: 1.5;
+    }
+
+    .download-btn {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      width: 100%;
+      padding: 15px 16px;
+      background: #f2f2f7;
+      color: #1c1c1e;
+      border: none;
+      border-radius: 12px;
+      font-size: 15px;
+      cursor: pointer;
+      margin-bottom: 10px;
+      text-align: left;
+      text-decoration: none;
+      transition: background 0.15s;
+    }
+    .download-btn:active { background: #e5e5ea; }
+
+    .download-btn-label { font-weight: 600; }
+    .download-btn-time { font-size: 13px; color: #8e8e93; margin-top: 2px; }
+    .download-btn-arrow { font-size: 18px; color: #007aff; }
+
+    .tip-box {
+      background: #fff9e6;
+      border: 1px solid #ffd60a;
+      border-radius: 12px;
+      padding: 14px 16px;
+      font-size: 13px;
+      color: #5a4400;
+      line-height: 1.6;
+      margin-top: 14px;
+    }
+    .tip-box strong { color: #3a2c00; }
+
+    .error-text {
+      color: #ff3b30;
+      font-size: 14px;
+      margin-top: 8px;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>🎙️ 音声分割ツール</h1>
+  <p class="subtitle">
+    長い音声をGeminiにアップロードできるサイズに分割します。<br>
+    処理はすべてブラウザ内で行われ、ファイルはサーバーに送られません。
+  </p>
+
+  <!-- ファイル選択 -->
+  <div class="card">
+    <div class="card-label">音声ファイル</div>
+    <div class="dropzone" id="dropzone">
+      <input type="file" id="fileInput" accept="audio/*,.m4a,.mp3,.wav,.aac,.ogg">
+      <div class="dropzone-icon">🎵</div>
+      <div class="dropzone-text">タップしてファイルを選択</div>
+      <div class="dropzone-sub">m4a・mp3・wav など対応</div>
+      <div id="fileName"></div>
+    </div>
+  </div>
+
+  <!-- 分割数 -->
+  <div class="card">
+    <div class="card-label">分割数</div>
+    <select id="splitCount">
+      <option value="2">2分割（前半・後半）</option>
+      <option value="3">3分割</option>
+      <option value="4" selected>4分割（推奨）</option>
+      <option value="5">5分割</option>
+      <option value="6">6分割</option>
+    </select>
+  </div>
+
+  <!-- 分割ボタン -->
+  <button class="split-btn" id="splitBtn" disabled>分割する</button>
+
+  <!-- 進捗 -->
+  <div class="card progress-section" id="progressSection">
+    <div class="card-label">処理中</div>
+    <div class="progress-bar">
+      <div class="progress-fill" id="progressFill"></div>
+    </div>
+    <div class="status-text" id="statusText">準備中...</div>
+    <div class="error-text" id="errorText"></div>
+  </div>
+
+  <!-- ダウンロード -->
+  <div class="card downloads-section" id="downloadsSection">
+    <div class="success-icon">✅</div>
+    <div class="success-msg">
+      分割が完了しました！<br>
+      各パートをダウンロードしてGeminiにアップロードしてください。
+    </div>
+    <div id="downloadLinks"></div>
+    <div class="tip-box">
+      <strong>💡 Geminiへのプロンプト例：</strong><br>
+      「この音声は72分の会議録音を4分割したうちの<strong>X番目</strong>です。
+      議事録の形式でまとめてください。
+      話者が複数いる場合は区別してください。」
+    </div>
+  </div>
+
+  <script type="module">
+    import { FFmpeg } from 'https://unpkg.com/@ffmpeg/ffmpeg@0.12.6/dist/esm/index.js';
+    import { fetchFile, toBlobURL } from 'https://unpkg.com/@ffmpeg/util@0.12.1/dist/esm/index.js';
+
+    const ffmpeg = new FFmpeg();
+    let selectedFile = null;
+    let ffmpegLoaded = false;
+
+    const fileInput      = document.getElementById('fileInput');
+    const dropzone       = document.getElementById('dropzone');
+    const fileNameEl     = document.getElementById('fileName');
+    const splitBtn       = document.getElementById('splitBtn');
+    const progressSection = document.getElementById('progressSection');
+    const progressFill   = document.getElementById('progressFill');
+    const statusText     = document.getElementById('statusText');
+    const errorText      = document.getElementById('errorText');
+    const downloadsSection = document.getElementById('downloadsSection');
+    const downloadLinks  = document.getElementById('downloadLinks');
+
+    // ファイル選択
+    dropzone.addEventListener('click', () => fileInput.click());
+    fileInput.addEventListener('change', (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+      selectedFile = file;
+      const mb = (file.size / 1024 / 1024).toFixed(1);
+      fileNameEl.textContent = `${file.name}（${mb} MB）`;
+      dropzone.classList.add('has-file');
+      splitBtn.disabled = false;
+      downloadsSection.style.display = 'none';
+      errorText.textContent = '';
+    });
+
+    // 音声の長さを取得
+    function getAudioDuration(file) {
+      return new Promise((resolve, reject) => {
+        const audio = new Audio();
+        audio.onloadedmetadata = () => {
+          URL.revokeObjectURL(audio.src);
+          resolve(audio.duration);
+        };
+        audio.onerror = () => reject(new Error('音声ファイルを読み込めませんでした'));
+        audio.src = URL.createObjectURL(file);
+      });
+    }
+
+    function formatTime(seconds) {
+      const m = Math.floor(seconds / 60);
+      const s = Math.floor(seconds % 60);
+      return `${m}:${String(s).padStart(2, '0')}`;
+    }
+
+    // 分割実行
+    splitBtn.addEventListener('click', async () => {
+      if (!selectedFile) return;
+
+      const splitCount = parseInt(document.getElementById('splitCount').value);
+      splitBtn.disabled = true;
+      errorText.textContent = '';
+      progressSection.style.display = 'block';
+      downloadsSection.style.display = 'none';
+      progressFill.style.width = '0%';
+      downloadLinks.innerHTML = '';
+
+      try {
+        // ffmpeg ロード（初回のみ）
+        if (!ffmpegLoaded) {
+          statusText.textContent = 'ffmpegを読み込み中...\n（初回は30秒ほどかかる場合があります）';
+          const baseURL = 'https://unpkg.com/@ffmpeg/core@0.12.6/dist/umd';
+          await ffmpeg.load({
+            coreURL: await toBlobURL(`${baseURL}/ffmpeg-core.js`, 'text/javascript'),
+            wasmURL: await toBlobURL(`${baseURL}/ffmpeg-core.wasm`, 'application/wasm'),
+          });
+          ffmpegLoaded = true;
+        }
+
+        // 音声の長さを取得
+        statusText.textContent = '音声の長さを確認中...';
+        progressFill.style.width = '5%';
+        const duration = await getAudioDuration(selectedFile);
+        const chunkDuration = duration / splitCount;
+
+        // ファイル書き込み
+        statusText.textContent = 'ファイルを読み込み中...';
+        progressFill.style.width = '10%';
+        const ext = selectedFile.name.split('.').pop().toLowerCase() || 'm4a';
+        const inputName = `input.${ext}`;
+        await ffmpeg.writeFile(inputName, await fetchFile(selectedFile));
+
+        // 分割ループ
+        const results = [];
+        for (let i = 0; i < splitCount; i++) {
+          const start = i * chunkDuration;
+          const startStr = formatTime(start);
+          const endStr   = formatTime(Math.min(start + chunkDuration, duration));
+
+          statusText.textContent =
+            `分割中 ${i + 1}/${splitCount}（${startStr} ～ ${endStr}）...`;
+          progressFill.style.width = `${10 + Math.round((i / splitCount) * 80)}%`;
+
+          const outputName = `part${i + 1}.${ext}`;
+          await ffmpeg.exec([
+            '-i', inputName,
+            '-ss', String(start),
+            '-t', String(chunkDuration),
+            '-c', 'copy',
+            '-y',
+            outputName
+          ]);
+
+          const data = await ffmpeg.readFile(outputName);
+          const blob = new Blob([data.buffer], { type: selectedFile.type || 'audio/mp4' });
+          results.push({ blob, start: startStr, end: endStr, index: i + 1, ext, name: selectedFile.name });
+
+          await ffmpeg.deleteFile(outputName);
+        }
+
+        await ffmpeg.deleteFile(inputName);
+
+        // ダウンロードボタン生成
+        for (const r of results) {
+          const url = URL.createObjectURL(r.blob);
+          const baseName = r.name.replace(/\.[^.]+$/, '');
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = `${baseName}_part${r.index}.${r.ext}`;
+          a.className = 'download-btn';
+          const mb = (r.blob.size / 1024 / 1024).toFixed(1);
+          a.innerHTML = `
+            <div>
+              <div class="download-btn-label">パート ${r.index}</div>
+              <div class="download-btn-time">${r.start} ～ ${r.end}（${mb} MB）</div>
+            </div>
+            <div class="download-btn-arrow">↓</div>
+          `;
+          downloadLinks.appendChild(a);
+        }
+
+        progressFill.style.width = '100%';
+        statusText.textContent = '完了！';
+        downloadsSection.style.display = 'block';
+
+      } catch (err) {
+        console.error(err);
+        errorText.textContent = `エラー: ${err.message}`;
+        statusText.textContent = '失敗しました。ページを再読み込みして再試行してください。';
+      } finally {
+        splitBtn.disabled = false;
+      }
+    });
+  </script>
+</body>
+</html>
