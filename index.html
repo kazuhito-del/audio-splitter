@@ -8,9 +8,10 @@
     // SharedArrayBuffer が使えない環境 (GitHub Pages など) では
     // Service Worker で COOP/COEP ヘッダーを付与して Cross-Origin Isolation を有効にする
     if ("serviceWorker" in navigator) {
-      navigator.serviceWorker.register("./coi-serviceworker.js").then(function (reg) {
-        // Service Worker が新規登録または更新された場合はリロードして有効化
-        if (!crossOriginIsolated) {
+      navigator.serviceWorker.register("./coi-serviceworker.js").then(function () {
+        // 1回だけリロード（無限ループ防止のため sessionStorage でフラグ管理）
+        if (!crossOriginIsolated && !sessionStorage.getItem('coi-reloaded')) {
+          sessionStorage.setItem('coi-reloaded', '1');
           window.location.reload();
         }
       }).catch(function (err) {
