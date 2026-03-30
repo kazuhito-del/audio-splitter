@@ -4,6 +4,20 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>音声分割ツール</title>
+  <script>
+    // SharedArrayBuffer が使えない環境 (GitHub Pages など) では
+    // Service Worker で COOP/COEP ヘッダーを付与して Cross-Origin Isolation を有効にする
+    if ("serviceWorker" in navigator) {
+      navigator.serviceWorker.register("./coi-serviceworker.js").then(function (reg) {
+        // Service Worker が新規登録または更新された場合はリロードして有効化
+        if (!crossOriginIsolated) {
+          window.location.reload();
+        }
+      }).catch(function (err) {
+        console.warn("Service Worker 登録失敗:", err);
+      });
+    }
+  </script>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -320,9 +334,18 @@
       downloadLinks.innerHTML = '';
 
       try {
+        // SharedArrayBuffer の利用可否を確認
+        if (typeof SharedArrayBuffer === 'undefined') {
+          throw new Error(
+            'このブラウザでは SharedArrayBuffer が使えません。\n' +
+            'ページを再読み込みしてから再試行してください。\n' +
+            '（再読み込みで Service Worker が有効になります）'
+          );
+        }
+
         // ffmpeg ロード（初回のみ）
         if (!ffmpegLoaded) {
-          statusText.textContent = 'ffmpegを読み込み中...\n（初回は30秒ほどかかる場合があります）';
+          statusText.textContent = 'ffmpegを読み込み中...\n（初回はWASMファイルのダウンロードで30〜60秒かかる場合があります）';
           const baseURL = 'https://unpkg.com/@ffmpeg/core@0.12.6/dist/umd';
           await ffmpeg.load({
             coreURL: await toBlobURL(`${baseURL}/ffmpeg-core.js`, 'text/javascript'),
