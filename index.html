@@ -60,7 +60,6 @@
     }
 
     .dropzone {
-      position: relative;
       border: 2px dashed #c7c7cc;
       border-radius: 12px;
       padding: 36px 16px;
@@ -71,16 +70,7 @@
     .dropzone:active { background: #f2f2f7; }
     .dropzone.has-file { border-color: #34c759; border-style: solid; }
 
-    /* ファイル入力をドロップゾーン全体に重ねて直接タップさせる（モバイル対応） */
-    #fileInput {
-      position: absolute;
-      inset: 0;
-      width: 100%;
-      height: 100%;
-      opacity: 0;
-      cursor: pointer;
-      z-index: 1;
-    }
+    #fileInput { display: none; }
 
     .dropzone-icon { font-size: 44px; margin-bottom: 10px; }
 
@@ -229,13 +219,13 @@
   <!-- ファイル選択 -->
   <div class="card">
     <div class="card-label">音声ファイル</div>
-    <div class="dropzone" id="dropzone">
+    <label class="dropzone" id="dropzone">
       <input type="file" id="fileInput" accept="audio/*,.m4a,.mp3,.wav,.aac,.ogg">
       <div class="dropzone-icon">🎵</div>
       <div class="dropzone-text">タップしてファイルを選択</div>
       <div class="dropzone-sub">m4a・mp3・wav など対応</div>
       <div id="fileName"></div>
-    </div>
+    </label>
   </div>
 
   <!-- 分割数 -->
