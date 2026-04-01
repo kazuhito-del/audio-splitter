@@ -4,21 +4,6 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>音声分割ツール</title>
-  <script>
-    // SharedArrayBuffer が使えない環境 (GitHub Pages など) では
-    // Service Worker で COOP/COEP ヘッダーを付与して Cross-Origin Isolation を有効にする
-    if ("serviceWorker" in navigator) {
-      navigator.serviceWorker.register("./coi-serviceworker.js").then(function () {
-        // 1回だけリロード（無限ループ防止のため sessionStorage でフラグ管理）
-        if (!crossOriginIsolated && !sessionStorage.getItem('coi-reloaded')) {
-          sessionStorage.setItem('coi-reloaded', '1');
-          window.location.reload();
-        }
-      }).catch(function (err) {
-        console.warn("Service Worker 登録失敗:", err);
-      });
-    }
-  </script>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -61,6 +46,7 @@
     }
 
     .dropzone {
+      display: block;
       border: 2px dashed #c7c7cc;
       border-radius: 12px;
       padding: 36px 16px;
@@ -264,68 +250,93 @@
     <div id="downloadLinks"></div>
     <div class="tip-box">
       <strong>💡 Geminiへのプロンプト例：</strong><br>
-      「この音声は72分の会議録音を4分割したうちの<strong>X番目</strong>です。
+      「この音声は長い録音を分割したうちの<strong>X番目</strong>です。
       議事録の形式でまとめてください。
       話者が複数いる場合は区別してください。」
     </div>
   </div>
 
-  <!-- ffmpeg.wasm v0.11.6: SharedArrayBuffer 不要、iOS Chrome でも動作 -->
-  <script src="https://unpkg.com/@ffmpeg/ffmpeg@0.11.6/dist/ffmpeg.min.js"></script>
   <script>
-    const { createFFmpeg, fetchFile } = FFmpeg;
-    const ffmpeg = createFFmpeg({ log: false });
-    let selectedFile = null;
-    let ffmpegLoaded = false;
-
-    const fileInput       = document.getElementById('fileInput');
-    const dropzone        = document.getElementById('dropzone');
-    const fileNameEl      = document.getElementById('fileName');
-    const splitBtn        = document.getElementById('splitBtn');
-    const progressSection = document.getElementById('progressSection');
-    const progressFill    = document.getElementById('progressFill');
-    const statusText      = document.getElementById('statusText');
-    const errorText       = document.getElementById('errorText');
+    const fileInput        = document.getElementById('fileInput');
+    const dropzone         = document.getElementById('dropzone');
+    const fileNameEl       = document.getElementById('fileName');
+    const splitBtn         = document.getElementById('splitBtn');
+    const progressSection  = document.getElementById('progressSection');
+    const progressFill     = document.getElementById('progressFill');
+    const statusText       = document.getElementById('statusText');
+    const errorText        = document.getElementById('errorText');
     const downloadsSection = document.getElementById('downloadsSection');
-    const downloadLinks   = document.getElementById('downloadLinks');
+    const downloadLinks    = document.getElementById('downloadLinks');
 
-    // ファイル選択
-    fileInput.addEventListener('change', (e) => {
-      const file = e.target.files[0];
+    let selectedFile = null;
+
+    fileInput.addEventListener('change', function(e) {
+      var file = e.target.files[0];
       if (!file) return;
       selectedFile = file;
-      const mb = (file.size / 1024 / 1024).toFixed(1);
-      fileNameEl.textContent = `${file.name}（${mb} MB）`;
+      var mb = (file.size / 1024 / 1024).toFixed(1);
+      fileNameEl.textContent = file.name + '（' + mb + ' MB）';
       dropzone.classList.add('has-file');
       splitBtn.disabled = false;
       downloadsSection.style.display = 'none';
       errorText.textContent = '';
     });
 
-    // 音声の長さを取得
-    function getAudioDuration(file) {
-      return new Promise((resolve, reject) => {
-        const audio = new Audio();
-        audio.onloadedmetadata = () => {
-          URL.revokeObjectURL(audio.src);
-          resolve(audio.duration);
-        };
-        audio.onerror = () => reject(new Error('音声ファイルを読み込めませんでした'));
-        audio.src = URL.createObjectURL(file);
-      });
-    }
-
     function formatTime(seconds) {
-      const m = Math.floor(seconds / 60);
-      const s = Math.floor(seconds % 60);
-      return `${m}:${String(s).padStart(2, '0')}`;
+      var m = Math.floor(seconds / 60);
+      var s = Math.floor(seconds % 60);
+      return m + ':' + String(s).padStart(2, '0');
     }
 
-    // 分割実行
-    splitBtn.addEventListener('click', async () => {
+    // PCM 16bit WAV として AudioBuffer の指定区間をエンコード
+    function encodeWavChunk(audioBuffer, startSample, endSample) {
+      var numChannels = audioBuffer.numberOfChannels;
+      var sampleRate  = audioBuffer.sampleRate;
+      var numSamples  = endSample - startSample;
+      var dataLength  = numSamples * numChannels * 2; // 16bit = 2bytes
+      var buf         = new ArrayBuffer(44 + dataLength);
+      var view        = new DataView(buf);
+
+      function writeStr(offset, str) {
+        for (var i = 0; i < str.length; i++) view.setUint8(offset + i, str.charCodeAt(i));
+      }
+
+      writeStr(0,  'RIFF');
+      view.setUint32(4,  36 + dataLength, true);
+      writeStr(8,  'WAVE');
+      writeStr(12, 'fmt ');
+      view.setUint32(16, 16, true);
+      view.setUint16(20, 1,  true); // PCM
+      view.setUint16(22, numChannels, true);
+      view.setUint32(24, sampleRate, true);
+      view.setUint32(28, sampleRate * numChannels * 2, true);
+      view.setUint16(32, numChannels * 2, true);
+      view.setUint16(34, 16, true);
+      writeStr(36, 'data');
+      view.setUint32(40, dataLength, true);
+
+      // チャンネルデータの参照を取得（コピーしない）
+      var channels = [];
+      for (var ch = 0; ch < numChannels; ch++) {
+        channels.push(audioBuffer.getChannelData(ch));
+      }
+
+      var offset = 44;
+      for (var i = startSample; i < endSample; i++) {
+        for (var ch = 0; ch < numChannels; ch++) {
+          var s = Math.max(-1, Math.min(1, channels[ch][i]));
+          view.setInt16(offset, s < 0 ? s * 32768 : s * 32767, true);
+          offset += 2;
+        }
+      }
+
+      return new Blob([buf], { type: 'audio/wav' });
+    }
+
+    splitBtn.addEventListener('click', async function() {
       if (!selectedFile) return;
 
-      const splitCount = parseInt(document.getElementById('splitCount').value);
+      var splitCount = parseInt(document.getElementById('splitCount').value);
       splitBtn.disabled = true;
       errorText.textContent = '';
       progressSection.style.display = 'block';
@@ -334,72 +345,50 @@
       downloadLinks.innerHTML = '';
 
       try {
-        // ffmpeg ロード（初回のみ）
-        if (!ffmpegLoaded) {
-          statusText.textContent = 'ffmpegを読み込み中...\n（初回はWASMファイルのダウンロードで30〜60秒かかる場合があります）';
-          await ffmpeg.load();
-          ffmpegLoaded = true;
-        }
-
-        // 音声の長さを取得
-        statusText.textContent = '音声の長さを確認中...';
+        statusText.textContent = '音声ファイルを読み込み中...';
         progressFill.style.width = '5%';
-        const duration = await getAudioDuration(selectedFile);
-        const chunkDuration = duration / splitCount;
 
-        // ファイル書き込み
-        statusText.textContent = 'ファイルを読み込み中...';
-        progressFill.style.width = '10%';
-        const ext = selectedFile.name.split('.').pop().toLowerCase() || 'm4a';
-        const inputName = `input.${ext}`;
-        ffmpeg.FS('writeFile', inputName, await fetchFile(selectedFile));
+        var arrayBuffer = await selectedFile.arrayBuffer();
 
-        // 分割ループ
-        const results = [];
-        for (let i = 0; i < splitCount; i++) {
-          const start = i * chunkDuration;
-          const startStr = formatTime(start);
-          const endStr   = formatTime(Math.min(start + chunkDuration, duration));
+        statusText.textContent = '音声をデコード中...\n（大きいファイルは1〜2分かかります）';
+        progressFill.style.width = '15%';
+        await new Promise(function(r) { setTimeout(r, 50); }); // UI更新を待つ
 
-          statusText.textContent =
-            `分割中 ${i + 1}/${splitCount}（${startStr} ～ ${endStr}）...`;
-          progressFill.style.width = `${10 + Math.round((i / splitCount) * 80)}%`;
+        var AudioCtx = window.AudioContext || window.webkitAudioContext;
+        var ctx = new AudioCtx();
+        var audioBuffer = await ctx.decodeAudioData(arrayBuffer);
+        await ctx.close();
 
-          const outputName = `part${i + 1}.${ext}`;
-          await ffmpeg.run(
-            '-i', inputName,
-            '-ss', String(start),
-            '-t', String(chunkDuration),
-            '-c', 'copy',
-            '-y',
-            outputName
-          );
+        var totalSamples = audioBuffer.length;
+        var chunkSamples = Math.ceil(totalSamples / splitCount);
+        var sampleRate   = audioBuffer.sampleRate;
+        var baseName     = selectedFile.name.replace(/\.[^.]+$/, '');
 
-          const data = ffmpeg.FS('readFile', outputName);
-          const blob = new Blob([data.buffer], { type: selectedFile.type || 'audio/mp4' });
-          results.push({ blob, start: startStr, end: endStr, index: i + 1, ext, name: selectedFile.name });
+        for (var i = 0; i < splitCount; i++) {
+          var startSample = i * chunkSamples;
+          var endSample   = Math.min(startSample + chunkSamples, totalSamples);
+          var startStr    = formatTime(startSample / sampleRate);
+          var endStr      = formatTime(endSample   / sampleRate);
 
-          ffmpeg.FS('unlink', outputName);
-        }
+          statusText.textContent = 'エンコード中 ' + (i + 1) + '/' + splitCount +
+            '（' + startStr + ' ～ ' + endStr + '）...';
+          progressFill.style.width = (15 + Math.round((i / splitCount) * 80)) + '%';
+          await new Promise(function(r) { setTimeout(r, 0); }); // UI更新を待つ
 
-        ffmpeg.FS('unlink', inputName);
+          var blob = encodeWavChunk(audioBuffer, startSample, endSample);
+          var url  = URL.createObjectURL(blob);
+          var mb   = (blob.size / 1024 / 1024).toFixed(1);
 
-        // ダウンロードボタン生成
-        for (const r of results) {
-          const url = URL.createObjectURL(r.blob);
-          const baseName = r.name.replace(/\.[^.]+$/, '');
-          const a = document.createElement('a');
-          a.href = url;
-          a.download = `${baseName}_part${r.index}.${r.ext}`;
+          var a = document.createElement('a');
+          a.href     = url;
+          a.download = baseName + '_part' + (i + 1) + '.wav';
           a.className = 'download-btn';
-          const mb = (r.blob.size / 1024 / 1024).toFixed(1);
-          a.innerHTML = `
-            <div>
-              <div class="download-btn-label">パート ${r.index}</div>
-              <div class="download-btn-time">${r.start} ～ ${r.end}（${mb} MB）</div>
-            </div>
-            <div class="download-btn-arrow">↓</div>
-          `;
+          a.innerHTML =
+            '<div>' +
+              '<div class="download-btn-label">パート ' + (i + 1) + '</div>' +
+              '<div class="download-btn-time">' + startStr + ' ～ ' + endStr + '（' + mb + ' MB）</div>' +
+            '</div>' +
+            '<div class="download-btn-arrow">↓</div>';
           downloadLinks.appendChild(a);
         }
 
@@ -409,7 +398,7 @@
 
       } catch (err) {
         console.error(err);
-        errorText.textContent = `エラー: ${err.message}`;
+        errorText.textContent = 'エラー: ' + err.message;
         statusText.textContent = '失敗しました。ページを再読み込みして再試行してください。';
       } finally {
         splitBtn.disabled = false;
