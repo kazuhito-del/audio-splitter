@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>カロリー・糖質トラッカー</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Helvetica Neue', sans-serif;
+      background: #f2f2f7;
+      color: #1c1c1e;
+      min-height: 100vh;
+      padding: 24px 16px 48px;
+    }
+
+    h1 { font-size: 26px; font-weight: 700; margin-bottom: 4px; }
+
+    .subtitle {
+      color: #8e8e93;
+      font-size: 14px;
+      margin-bottom: 28px;
+      line-height: 1.5;
+    }
+
+    .card {
+      background: #fff;
+      border-radius: 16px;
+      padding: 20px;
+      margin-bottom: 14px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+    }
+
+    .card-label {
+      font-size: 13px;
+      font-weight: 600;
+      color: #8e8e93;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 12px;
+    }
+
+    /* Summary bar */
+    .summary {
+      display: flex;
+      gap: 12px;
+    }
+    .summary-item {
+      flex: 1;
+      background: #f2f2f7;
+      border-radius: 12px;
+      padding: 14px 12px;
+      text-align: center;
+    }
+    .summary-value {
+      font-size: 28px;
+      font-weight: 700;
+      color: #007aff;
+      line-height: 1;
+    }
+    .summary-value.sugar { color: #ff9500; }
+    .summary-unit {
+      font-size: 12px;
+      color: #8e8e93;
+      margin-top: 4px;
+    }
+    .summary-label {
+      font-size: 13px;
+      font-weight: 600;
+      margin-top: 6px;
+    }
+
+    /* Category tabs */
+    .tabs {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 12px;
+      overflow-x: auto;
+      padding-bottom: 4px;
+      scrollbar-width: none;
+    }
+    .tabs::-webkit-scrollbar { display: none; }
+    .tab {
+      flex-shrink: 0;
+      padding: 7px 14px;
+      border-radius: 20px;
+      border: 1.5px solid #e5e5ea;
+      background: #fff;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      color: #8e8e93;
+      transition: all 0.15s;
+    }
+    .tab.active {
+      background: #007aff;
+      border-color: #007aff;
+      color: #fff;
+    }
+
+    /* Menu item row */
+    .menu-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 0;
+      border-bottom: 1px solid #f2f2f7;
+    }
+    .menu-item:last-child { border-bottom: none; }
+    .menu-item-info { flex: 1; min-width: 0; }
+    .menu-item-name {
+      font-size: 15px;
+      font-weight: 500;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .menu-item-macros {
+      font-size: 12px;
+      color: #8e8e93;
+      margin-top: 3px;
+    }
+    .menu-item-macros span { margin-right: 10px; }
+    .menu-item-macros .kcal { color: #007aff; font-weight: 600; }
+    .menu-item-macros .sugar { color: #ff9500; font-weight: 600; }
+
+    .add-btn {
+      flex-shrink: 0;
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      background: #007aff;
+      color: #fff;
+      border: none;
+      font-size: 22px;
+      line-height: 30px;
+      text-align: center;
+      cursor: pointer;
+      margin-left: 12px;
+      transition: opacity 0.15s;
+    }
+    .add-btn:active { opacity: 0.7; }
+
+    /* Log list */
+    .log-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 0;
+      border-bottom: 1px solid #f2f2f7;
+    }
+    .log-item:last-child { border-bottom: none; }
+    .log-item-name { font-size: 15px; font-weight: 500; flex: 1; }
+    .log-item-macros {
+      font-size: 13px;
+      color: #8e8e93;
+      text-align: right;
+      margin-right: 12px;
+    }
+    .log-item-macros .kcal { color: #007aff; font-weight: 600; }
+    .log-item-macros .sugar { color: #ff9500; font-weight: 600; }
+    .remove-btn {
+      flex-shrink: 0;
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      background: #ff3b30;
+      color: #fff;
+      border: none;
+      font-size: 18px;
+      line-height: 26px;
+      text-align: center;
+      cursor: pointer;
+      transition: opacity 0.15s;
+    }
+    .remove-btn:active { opacity: 0.7; }
+
+    .empty-log {
+      text-align: center;
+      color: #c7c7cc;
+      font-size: 14px;
+      padding: 20px 0;
+    }
+
+    .clear-btn {
+      width: 100%;
+      padding: 13px;
+      background: #ff3b30;
+      color: #fff;
+      border: none;
+      border-radius: 12px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      margin-top: 4px;
+      transition: opacity 0.2s;
+    }
+    .clear-btn:active { opacity: 0.8; }
+    .clear-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+
+    .hidden { display: none !important; }
+  </style>
+</head>
+<body>
+
+  <h1>🍔 カロリー・糖質トラッカー</h1>
+  <p class="subtitle">食べたメニューを追加してカロリーと糖質を管理しましょう。</p>
+
+  <!-- Summary -->
+  <div class="card">
+    <div class="card-label">今日の合計</div>
+    <div class="summary">
+      <div class="summary-item">
+        <div class="summary-value" id="totalCalories">0</div>
+        <div class="summary-unit">kcal</div>
+        <div class="summary-label">カロリー</div>
+      </div>
+      <div class="summary-item">
+        <div class="summary-value sugar" id="totalSugar">0.0</div>
+        <div class="summary-unit">g</div>
+        <div class="summary-label">糖質</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Log -->
+  <div class="card" id="logCard">
+    <div class="card-label">食事ログ</div>
+    <div id="logList">
+      <div class="empty-log" id="emptyLog">まだ追加されていません</div>
+    </div>
+    <button class="clear-btn" id="clearBtn" disabled onclick="clearLog()">すべてクリア</button>
+  </div>
+
+  <!-- Menu -->
+  <div class="card">
+    <div class="card-label">メニューから追加</div>
+    <div class="tabs" id="tabs"></div>
+    <div id="menuList"></div>
+  </div>
+
+  <script>
+    const MENU = {
+      '朝食': [
+        { name: 'メガマフィン',                  kcal: 484, sugar: 32.7 },
+        { name: 'マックグリドル ソーセージエッグ', kcal: 421, sugar: 40.5 },
+        { name: 'ソーセージエッグマフィン',        kcal: 370, sugar: 25.7 },
+        { name: 'エッグマフィン',                 kcal: 290, sugar: 26.4 },
+        { name: 'ソーセージマフィン',              kcal: 305, sugar: 25.4 },
+        { name: 'ホットケーキ',                   kcal: 523, sugar: 91.2 },
+      ],
+      'バーガー': [
+        { name: 'ビッグマック',          kcal: 525, sugar: 42.2 },
+        { name: 'クォーターパウンダー',   kcal: 501, sugar: 35.5 },
+        { name: 'フィレオフィッシュ',     kcal: 379, sugar: 40.1 },
+        { name: 'チキンクリスプ',         kcal: 364, sugar: 33.5 },
+        { name: 'てりやきマックバーガー', kcal: 476, sugar: 46.5 },
+        { name: 'チーズバーガー',         kcal: 312, sugar: 31.5 },
+        { name: 'ハンバーガー',           kcal: 257, sugar: 28.5 },
+      ],
+      'サイド': [
+        { name: 'フライドポテト S',      kcal: 234, sugar: 30.4 },
+        { name: 'フライドポテト M',      kcal: 320, sugar: 41.7 },
+        { name: 'フライドポテト L',      kcal: 410, sugar: 53.4 },
+        { name: 'チキンナゲット 5個',    kcal: 278, sugar: 18.1 },
+        { name: 'チキンナゲット 15個',   kcal: 835, sugar: 54.4 },
+        { name: 'コーンカップ',          kcal:  80, sugar: 16.8 },
+      ],
+      'ドリンク': [
+        { name: 'プレミアムローストコーヒー S', kcal:   6, sugar:  1.2 },
+        { name: 'プレミアムローストコーヒー M', kcal:   9, sugar:  1.7 },
+        { name: 'マックラテ S',                 kcal:  80, sugar:  7.3 },
+        { name: 'マックラテ M',                 kcal: 110, sugar:  9.9 },
+        { name: 'コカ・コーラ S',               kcal: 125, sugar: 33.5 },
+        { name: 'コカ・コーラ M',               kcal: 197, sugar: 52.8 },
+        { name: 'オレンジジュース S',           kcal:  85, sugar: 19.0 },
+      ],
+    };
+
+    let log = [];
+    let activeCategory = Object.keys(MENU)[0];
+
+    function renderTabs() {
+      const tabs = document.getElementById('tabs');
+      tabs.innerHTML = '';
+      Object.keys(MENU).forEach(cat => {
+        const btn = document.createElement('button');
+        btn.className = 'tab' + (cat === activeCategory ? ' active' : '');
+        btn.textContent = cat;
+        btn.onclick = () => { activeCategory = cat; renderTabs(); renderMenu(); };
+        tabs.appendChild(btn);
+      });
+    }
+
+    function renderMenu() {
+      const list = document.getElementById('menuList');
+      list.innerHTML = '';
+      MENU[activeCategory].forEach((item, idx) => {
+        const row = document.createElement('div');
+        row.className = 'menu-item';
+        row.innerHTML =
+          '<div class="menu-item-info">' +
+            '<div class="menu-item-name">' + item.name + '</div>' +
+            '<div class="menu-item-macros">' +
+              '<span class="kcal">' + item.kcal + ' kcal</span>' +
+              '<span class="sugar">糖質 ' + item.sugar + ' g</span>' +
+            '</div>' +
+          '</div>' +
+          '<button class="add-btn" aria-label="追加">+</button>';
+        row.querySelector('.add-btn').onclick = () => addItem(item);
+        list.appendChild(row);
+      });
+    }
+
+    function addItem(item) {
+      log.push({ ...item });
+      renderLog();
+      updateSummary();
+    }
+
+    function removeItem(idx) {
+      log.splice(idx, 1);
+      renderLog();
+      updateSummary();
+    }
+
+    function clearLog() {
+      log = [];
+      renderLog();
+      updateSummary();
+    }
+
+    function renderLog() {
+      const list = document.getElementById('logList');
+      const emptyLog = document.getElementById('emptyLog');
+      const clearBtn = document.getElementById('clearBtn');
+      list.innerHTML = '';
+
+      if (log.length === 0) {
+        list.appendChild(emptyLog);
+        emptyLog.style.display = '';
+        clearBtn.disabled = true;
+        return;
+      }
+
+      clearBtn.disabled = false;
+      log.forEach((item, idx) => {
+        const row = document.createElement('div');
+        row.className = 'log-item';
+        row.innerHTML =
+          '<div class="log-item-name">' + item.name + '</div>' +
+          '<div class="log-item-macros">' +
+            '<div class="kcal">' + item.kcal + ' kcal</div>' +
+            '<div class="sugar">糖質 ' + item.sugar + ' g</div>' +
+          '</div>' +
+          '<button class="remove-btn" aria-label="削除">−</button>';
+        row.querySelector('.remove-btn').onclick = () => removeItem(idx);
+        list.appendChild(row);
+      });
+    }
+
+    function updateSummary() {
+      const totalKcal  = log.reduce((s, i) => s + i.kcal,  0);
+      const totalSugar = log.reduce((s, i) => s + i.sugar, 0);
+      document.getElementById('totalCalories').textContent = totalKcal;
+      document.getElementById('totalSugar').textContent    = totalSugar.toFixed(1);
+    }
+
+    renderTabs();
+    renderMenu();
+    renderLog();
+  </script>
+</body>
+</html>
