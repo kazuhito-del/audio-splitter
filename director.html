@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>映像作品における監督の役割</title>
+<meta name="description" content="映画・ドラマ・CMなど映像作品における監督（ディレクター）の役割をプリプロダクションから完成まで段階別に解説します。">
+<style>
+  :root {
+    --bg: #0e0f13;
+    --panel: #161821;
+    --panel-2: #1d2030;
+    --accent: #ff5a5f;
+    --accent-2: #ffd166;
+    --text: #f2f3f7;
+    --muted: #a6acc2;
+    --line: #2a2e40;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: "Hiragino Kaku Gothic ProN", "Yu Gothic", "Meiryo", system-ui, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.8;
+    -webkit-font-smoothing: antialiased;
+  }
+  .wrap { max-width: 880px; margin: 0 auto; padding: 0 20px; }
+
+  header.hero {
+    background:
+      radial-gradient(1200px 400px at 80% -10%, rgba(255,90,95,.25), transparent),
+      radial-gradient(900px 400px at 0% 0%, rgba(255,209,102,.18), transparent),
+      var(--panel);
+    border-bottom: 1px solid var(--line);
+    padding: 72px 0 56px;
+  }
+  .badge {
+    display: inline-block;
+    font-size: 13px;
+    letter-spacing: .15em;
+    color: var(--accent-2);
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    padding: 6px 14px;
+    margin-bottom: 22px;
+  }
+  h1 { font-size: clamp(28px, 6vw, 46px); line-height: 1.25; font-weight: 800; }
+  h1 .accent { color: var(--accent); }
+  .lead { color: var(--muted); font-size: 18px; margin-top: 18px; max-width: 640px; }
+
+  main { padding: 56px 0 80px; }
+  section { margin-bottom: 56px; }
+  h2 {
+    font-size: 24px;
+    margin-bottom: 8px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  h2 .num {
+    font-size: 14px;
+    color: var(--bg);
+    background: var(--accent-2);
+    width: 30px; height: 30px;
+    border-radius: 8px;
+    display: grid; place-items: center;
+    font-weight: 800;
+    flex: none;
+  }
+  h2 .phase { font-size: 13px; color: var(--muted); font-weight: 500; }
+  h3 { font-size: 17px; margin: 22px 0 6px; color: var(--accent-2); }
+  p { color: var(--text); }
+  p.muted { color: var(--muted); margin-top: 6px; }
+
+  .card {
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 16px;
+    padding: 26px 28px;
+    margin-top: 16px;
+  }
+  ul { margin: 10px 0 0 0; padding-left: 0; list-style: none; }
+  ul li {
+    position: relative;
+    padding: 8px 0 8px 28px;
+    border-bottom: 1px dashed var(--line);
+    color: var(--text);
+  }
+  ul li:last-child { border-bottom: none; }
+  ul li::before {
+    content: "▶";
+    position: absolute;
+    left: 0; top: 9px;
+    color: var(--accent);
+    font-size: 11px;
+  }
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 16px;
+    margin-top: 18px;
+  }
+  .pill {
+    background: var(--panel-2);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    padding: 18px 18px;
+  }
+  .pill strong { color: var(--accent-2); display: block; margin-bottom: 4px; }
+  .pill span { color: var(--muted); font-size: 14px; }
+
+  blockquote {
+    border-left: 3px solid var(--accent);
+    padding: 6px 0 6px 18px;
+    color: var(--muted);
+    margin: 22px 0;
+    font-style: italic;
+  }
+
+  footer {
+    border-top: 1px solid var(--line);
+    padding: 30px 0 50px;
+    color: var(--muted);
+    font-size: 14px;
+    text-align: center;
+  }
+</style>
+</head>
+<body>
+  <header class="hero">
+    <div class="wrap">
+      <span class="badge">FILM PRODUCTION</span>
+      <h1>映像作品における<br><span class="accent">監督</span>の役割</h1>
+      <p class="lead">映画・ドラマ・CM・MV など、あらゆる映像作品で「作品全体の創造的責任」を担うのが監督（ディレクター）です。企画から完成まで、各工程での役割を整理しました。</p>
+    </div>
+  </header>
+
+  <main class="wrap">
+
+    <section>
+      <h2><span class="num">0</span>監督とは <span class="phase">— 作品の最終的な創造責任者</span></h2>
+      <div class="card">
+        <p>監督は、脚本という設計図を「映像」という形に翻訳し、画づくり・芝居・音・編集のすべてを統括して一つの作品としてまとめ上げる責任者です。プロデューサーが「予算・スケジュール・座組」を管理するのに対し、監督は<strong>「作品の中身（表現）」</strong>に対して最終決定権を持ちます。</p>
+        <blockquote>すべての選択は「この作品で何を伝えたいのか」という監督のビジョンに収束する。</blockquote>
+      </div>
+    </section>
+
+    <section>
+      <h2><span class="num">1</span>プリプロダクション <span class="phase">— 準備段階</span></h2>
+      <div class="card">
+        <h3>作品ビジョンの確立</h3>
+        <p>脚本を読み込み、テーマ・トーン・世界観を解釈。「どう見せるか」の方針を決め、スタッフ全員に共有します。</p>
+        <ul>
+          <li>脚本の解釈・ホン直し（脚本家との協議）</li>
+          <li>絵コンテ／字コンテの作成によるカット設計</li>
+          <li>キャスティング（オーディション・配役の決定）</li>
+          <li>ロケハン（撮影場所の選定）・美術や衣装の方向性決定</li>
+          <li>撮影監督・各セクションとの打ち合わせ</li>
+        </ul>
+      </div>
+    </section>
+
+    <section>
+      <h2><span class="num">2</span>プロダクション <span class="phase">— 撮影段階</span></h2>
+      <div class="card">
+        <h3>現場の指揮</h3>
+        <p>撮影現場の最高責任者として、俳優の演技とカメラ・照明・音声をまとめ上げ、狙い通りの映像を撮り切ります。</p>
+        <div class="grid">
+          <div class="pill"><strong>演出（演技指導）</strong><span>俳優から狙った芝居を引き出す</span></div>
+          <div class="pill"><strong>画面設計</strong><span>カメラの位置・動き・構図の決定</span></div>
+          <div class="pill"><strong>OK / NG 判断</strong><span>各テイクの採否を決める</span></div>
+          <div class="pill"><strong>現場の統率</strong><span>全スタッフの方向性をそろえる</span></div>
+        </div>
+        <p class="muted">「カット！」「OK！」を出すのは監督。限られた時間と予算の中で、最良のテイクを判断し続けます。</p>
+      </div>
+    </section>
+
+    <section>
+      <h2><span class="num">3</span>ポストプロダクション <span class="phase">— 仕上げ段階</span></h2>
+      <div class="card">
+        <h3>編集で作品を完成させる</h3>
+        <p>撮影素材を編集者とともに組み立て、テンポ・感情の流れを設計。音楽・効果音・カラーグレーディングまで監修し、作品を完成形へ導きます。</p>
+        <ul>
+          <li>編集（カットの取捨選択・つなぎ・尺の調整）</li>
+          <li>MA（整音）／劇伴・効果音の選定と発注</li>
+          <li>カラーグレーディング・VFX の方向性監修</li>
+          <li>試写を経た最終仕上げ（ファイナルカット）</li>
+        </ul>
+      </div>
+    </section>
+
+    <section>
+      <h2><span class="num">4</span>監督に求められる力</h2>
+      <div class="grid">
+        <div class="pill"><strong>ビジョン</strong><span>作品で何を伝えたいかを明確に持つ</span></div>
+        <div class="pill"><strong>コミュニケーション力</strong><span>大人数のスタッフ・俳優を導く</span></div>
+        <div class="pill"><strong>決断力</strong><span>無数の選択を即座に判断する</span></div>
+        <div class="pill"><strong>映像言語の知識</strong><span>構図・編集・音の文法を理解する</span></div>
+        <div class="pill"><strong>マネジメント感覚</strong><span>予算と時間の制約の中で実現する</span></div>
+        <div class="pill"><strong>情熱と忍耐</strong><span>長丁場を最後までやり切る</span></div>
+      </div>
+    </section>
+
+    <section>
+      <h2><span class="num">+</span>関連する職種との違い</h2>
+      <div class="card">
+        <ul>
+          <li><strong>プロデューサー</strong>：予算・スケジュール・人員など「製作の管理」を担当。監督の創造活動を支える。</li>
+          <li><strong>撮影監督（DP）</strong>：監督のビジョンを基に、照明とカメラで「画の質感」を作る技術責任者。</li>
+          <li><strong>助監督</strong>：撮影スケジュールや現場進行を管理し、監督が演出に集中できるよう補佐する。</li>
+          <li><strong>編集者</strong>：監督と二人三脚で素材を組み立て、リズムと構成を磨く。</li>
+        </ul>
+      </div>
+    </section>
+
+  </main>
+
+  <footer class="wrap">
+    映像作品における監督の役割 — 企画から完成まで作品の創造的責任を担う存在。
+  </footer>
+</body>
+</html>
